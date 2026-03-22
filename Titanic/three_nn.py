@@ -1,0 +1,76 @@
+# This Python 3 environment comes with many helpful analytics libraries installed
+# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load
+
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+# Input data files are available in the read-only "../input/" directory
+# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
+
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+
+
+import torch
+import pandas as pd
+from torch import nn
+
+train_data = pd.read_csv("/kaggle/input/competitions/titanic/train.csv")
+test_data = pd.read_csv("/kaggle/input/competitions/titanic/test.csv")
+
+features = ["Pclass", "Sex", "SibSp", "Parch"]
+
+y_train = torch.tensor(train_data["Survived"].values, dtype=torch.float)
+
+X_train_df = pd.get_dummies(train_data[features]).astype(float)
+X_test_df = pd.get_dummies(test_data[features]).astype(float)
+
+mean = X_train_df.mean()
+std = X_train_df.std().replace(0, 1)
+X_train_df = (X_train_df - mean) / std
+X_test_df = (X_test_df - mean) / std
+
+X_train = torch.tensor(X_train_df.values, dtype=torch.float)
+X_test = torch.tensor(X_test_df.values, dtype=torch.float)
+
+
+class TitanicModel(nn.Module):
+    def __init__(self, input_dim):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1),
+        )
+
+    def forward(self, x):
+        return self.net(x).squeeze()
+
+
+torch.manual_seed(42)
+model_0 = TitanicModel(X_train.shape[1])
+
+epochs = 100
+loss_fn = nn.L1Loss()
+optimizer = torch.optim.SGD(params=model_0.parameters(), lr=0.01)
+
+for epoch in range(epochs):
+    model_0.train()
+    y_pred = model_0(X_train)
+    loss = loss_fn(y_pred, y_train)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+model_0.eval()
+with torch.no_grad():
+    predictions = (model_0(X_test) > 0.5).int().numpy()
+
+output = pd.DataFrame({'PassengerId': test_data.PassengerId, 'Survived': predictions})
+output.to_csv('submission.csv', index=False)
+print("Your submission was successfully saved!")

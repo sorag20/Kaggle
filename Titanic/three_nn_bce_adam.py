@@ -58,8 +58,8 @@ torch.manual_seed(42)
 model_0 = TitanicModel(X_train.shape[1])
 
 epochs = 100
-loss_fn = nn.L1Loss()
-optimizer = torch.optim.SGD(params=model_0.parameters(), lr=0.01)
+loss_fn = nn.BCEWithLogitsLoss()
+optimizer = torch.optim.Adam(params=model_0.parameters(), lr=0.01)
 
 for epoch in range(epochs):
     model_0.train()
@@ -71,7 +71,7 @@ for epoch in range(epochs):
 
 model_0.eval()
 with torch.no_grad():
-    predictions = (model_0(X_test) > 0.5).int().numpy()
+    predictions = (model_0(X_test) > 0).int().numpy()
 
 output = pd.DataFrame({'PassengerId': test_data.PassengerId, 'Survived': predictions})
 output.to_csv('submission.csv', index=False)

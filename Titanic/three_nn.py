@@ -67,6 +67,14 @@ for epoch in range(epochs):
     loss.backward()
     optimizer.step()
 
+from torchviz import make_dot
+from IPython.display import display, Image
+
+dummy_input = torch.zeros(1, X_train.shape[1])
+dot = make_dot(model_0(dummy_input), params=dict(model_0.named_parameters()))
+dot.render("/kaggle/working/nn_graph", format="png", cleanup=True)
+display(Image("/kaggle/working/nn_graph.png"))
+
 model_0.eval()
 with torch.no_grad():
     predictions = (model_0(X_test) > 0.5).int().numpy()
